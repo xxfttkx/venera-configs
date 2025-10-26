@@ -30,7 +30,13 @@ class Jmanga extends ComicSource {
     // update url
     url = ""
 
-    source_url = "https://jmanga.tel/"
+    static source_url = "https://jmanga.tel/"
+
+    static headers = {
+        "Referer": Jmanga.source_url,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+
 
     // explore page list
     explore = [{
@@ -50,7 +56,7 @@ class Jmanga extends ComicSource {
          * - for `mixed` type, use param `page` as index. for each index(0-based), return {data: [], maxPage: number?}, data is an array contains Comic[] or {title: string, comics: Comic[], viewMore: string?}
          */
         load: async(page) => {
-            let res = await Network.get(`${this.source_url}home/`);
+            let res = await Network.get(`${Jmanga.source_url}home/`);
 
             if (res.status !== 200) {
                 throw `Invalid status code: ${res.status}`
@@ -58,16 +64,14 @@ class Jmanga extends ComicSource {
 
             // 2. 解析文档
             let doc = new HtmlDocument(res.body);
-            let count = 0;
             // 3. 通用解析单元函数
             function parseItem(el) {
                 let manga = el.querySelector("a.manga-poster");
                 let href = manga.attributes.href;
-                let title = href.split("/read/")[1].split("-raw")[0];
-                let id = count;
-                count += 1
+                let id = href.split("/read/")[1];
+                let title = id.split("-raw")[0];
                 let img = manga.querySelector("img")
-                let cover = img.attributes.src;
+                let cover = img.attributes["data-src"] || img.attributes.src;
                 return new Comic({ id, title, cover });
             }
 
@@ -87,9 +91,13 @@ class Jmanga extends ComicSource {
             let comics = {}
             comics["hot"] = []
             comics["latest"] = latest
-            for (let comic of latest)
-                console.log(comic)
-            return comics;
+            return [
+                {
+                    title: "Latest",
+                    comics: latest,
+                    viewMore: "viewMore",
+                }
+            ];
         },
 
         /**
@@ -107,7 +115,7 @@ class Jmanga extends ComicSource {
         title: "",
         parts: [{
             // title of the part
-            name: "Theme",
+            name: "Label",
 
             // fixed or random or dynamic
             // if random, need to provide `randomNumber` field, which indicates the number of comics to display at the same time
@@ -127,7 +135,21 @@ class Jmanga extends ComicSource {
                         param: null,
                     },
                 },
-            }, ]
+            },
+            {
+                label: "ファンタジー",
+                /**
+                 * @type {PageJumpTarget}
+                 */
+                target: {
+                    page: "category",
+                    attributes: {
+                        category: "ファンタジー",
+                        param: null,
+                    },
+                },
+            },
+         ]
 
             // number of comics to display at the same time
             // randomNumber: 5,
@@ -262,30 +284,46 @@ class Jmanga extends ComicSource {
          * @returns {Promise<{comics: Comic[], maxPage: number}>}
          */
         load: async(keyword, options, page) => {
-            /*
-            ```
-            let data = JSON.parse((await Network.get('...')).body)
-            let maxPage = data.maxPage
+            let res = await Network.get(`${Jmanga.source_url}home/`);
 
-            function parseComic(comic) {
-                // ...
-
-                return new Comic({
-                    id: id,
-                    title: title,
-                    subTitle: author,
-                    cover: cover,
-                    tags: tags,
-                    description: description
-                })
+            if (res.status !== 200) {
+                throw `Invalid status code: ${res.status}`
             }
+
+            // 2. 解析文档
+            let doc = new HtmlDocument(res.body);
+            // 3. 通用解析单元函数
+            function parseItem(el) {
+                let manga = el.querySelector("a.manga-poster");
+                let href = manga.attributes.href;
+                let id = href.split("/read/")[1];
+                let title = id.split("-raw")[0];
+                let img = manga.querySelector("img")
+                let cover = img.attributes["data-src"] || img.attributes.src;
+                return new Comic({ id, title, cover });
+            }
+
+            // 5. 抓「最近更新」
+            let latest = [];
+            // 找到标题元素，再拿其后面的 <ul> 下的 .media-cell.vertical
+            let latest_updated = doc.getElementById("latest-latest-updated");
+            if (latest_updated) {
+                let ul = latest_updated.querySelector(".mls-wrap");
+                if (ul) {
+                    let items = ul.querySelectorAll(".item.item-spc.flw-item");
+                    for (let el of items) latest.push(parseItem(el));
+                }
+            }
+            // 7. 清理并返回
+            doc.dispose();
+            let comics = {}
+            comics["hot"] = []
+            comics["latest"] = latest
 
             return {
-                comics: data.list.map(parseComic),
-                maxPage: maxPage
+                comics: latest,
+                maxPage: 10
             }
-            ```
-            */
         },
 
         /**
@@ -460,7 +498,44 @@ class Jmanga extends ComicSource {
          * @returns {Promise<ComicDetails>}
          */
         loadInfo: async(id) => {
+            let res = await Network.get(`${Jmanga.source_url}read/${id}`);
 
+            if (res.status !== 200) {
+                throw `Invalid status code: ${res.status}`
+            }
+
+            // 2. 解析文档
+            let doc = new HtmlDocument(res.body);
+            // 3. 通用解析单元函数
+            function parseDoc(doc) {
+                let manga = doc.querySelector(".manga-poster");
+                let title = doc.querySelector(".manga-name")?.text?.trim() || "";
+                let img = manga.querySelector("img")
+                let cover = img.attributes["data-src"] || img.attributes.src;
+                let description = doc.querySelector(".description-modal")?.text?.trim() || "";
+                let chapters = new Map()
+                let ul = doc.querySelector(".ulclear.reading-list.lang-chapters");
+                let series = ul.querySelectorAll(".item.reading-item.chapter-item");
+                for(let e of Array.from(series).reverse()) {
+                    let item = e.querySelector("a.item-link");
+                    let href = item.attributes.href;
+                    let title = item.attributes.title?.trim() || "";
+                    chapters.set(href, title)
+                }
+                return new ComicDetails({
+                    title: title,
+                    cover: cover,
+                    description: description,
+                    tags: {},
+                    chapters: chapters,
+                });
+            }
+
+            let comicDetails = parseDoc(doc)
+            // 7. 清理并返回
+            doc.dispose();
+
+            return comicDetails;
         },
         /**
          * [Optional] load thumbnails of a comic
@@ -502,14 +577,56 @@ class Jmanga extends ComicSource {
          * @returns {Promise<{images: string[]}>}
          */
         loadEp: async(comicId, epId) => {
-            /*
-            ```
+            let href = epId
+            let res = await Network.get(href, Jmanga.headers);
+
+            if (res.status !== 200) {
+                throw `Invalid status code: ${res.status}`
+            }
+
+            // 2. 解析文档
+            let doc = new HtmlDocument(res.body);
+            if (!doc) {
+                throw `Doc not found`;
+            }
+            let ul = doc.querySelector(".ulclear.reading-list.lang-chapters");
+            if (!ul) {
+                throw `Chapter list not found`;
+            }
+            let liList = ul.querySelectorAll(".item.reading-item.chapter-item");
+            let found = false;
+            let id = "id";
+            for (let li of liList) {
+                let item = li.querySelector("a.item-link");
+                if(href == item.attributes.href) {
+                    // console.log(JSON.stringify(item.attributes, null, 2));
+                    id = li.attributes["data-id"];
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                throw `Chapter not found`;
+            }
+            console.log("Find Chapter ID: " + id);
+            // 3. 通用解析单元函数
+            let result = await Network.get(`${Jmanga.source_url}json/chapter?mode=vertical&id=${id}`, {
+                "Accept": "application/json",
+                "Referer": Jmanga.source_url,
+            });
+            if (result.status !== 200) {
+                throw `Invalid status code: ${result.status}`
+            }
+            let data = JSON.parse(result.body);
+            let html = data.html;
+            const imgUrls = [...html.matchAll(/data-src="([^"]+)"/g)].map(m => m[1]);
+            // 7. 清理并返回
+            doc.dispose();
+
             return {
                 // string[]
-                images: images
+                images: imgUrls
             }
-            ```
-            */
         },
         /**
          * [Optional] provide configs for an image loading
