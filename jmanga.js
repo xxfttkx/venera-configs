@@ -340,7 +340,8 @@ class Jmanga extends ComicSource {
          * @returns {Promise<{comics: Comic[], maxPage: number}>}
          */
         load: async(keyword, options, page) => {
-            let res = await Network.get(`${Jmanga.source_url}home/`);
+            let url = `${Jmanga.source_url}?q=${keyword}`
+            let res = await Network.get(url);   
 
             if (res.status !== 200) {
                 throw `Invalid status code: ${res.status}`
@@ -349,37 +350,30 @@ class Jmanga extends ComicSource {
             // 2. 解析文档
             let doc = new HtmlDocument(res.body);
             // 3. 通用解析单元函数
-            function parseItem(el) {
-                let manga = el.querySelector("a.manga-poster");
-                let href = manga.attributes.href;
-                let id = href.split("/read/")[1];
-                let title = id.split("-raw")[0];
-                let img = manga.querySelector("img")
-                let cover = img.attributes["data-src"] || img.attributes.src;
-                return new Comic({ id, title, cover });
+            function parseDoc(doc) {
+                let mangaListWrap = doc.querySelector(".mls-wrap");
+                let mangaList = mangaListWrap.querySelectorAll(".item.item-spc.flw-item");
+                let commics = []
+                for (let el of mangaList) {
+                    let mangaPoster = el.querySelector("a.manga-poster");
+                    let href = mangaPoster.attributes.href;
+                    let id = href.split("/read/")[1];
+                    let title = id.split("-raw")[0];
+                    let img = mangaPoster.querySelector("img")
+                    let cover = img.attributes["data-src"] || img.attributes.src;
+                    commics.push(new Comic({ id, title, cover }) );
+                }
+                return commics;
             }
 
-            // 5. 抓「最近更新」
-            let latest = [];
-            // 找到标题元素，再拿其后面的 <ul> 下的 .media-cell.vertical
-            let latest_updated = doc.getElementById("latest-latest-updated");
-            if (latest_updated) {
-                let ul = latest_updated.querySelector(".mls-wrap");
-                if (ul) {
-                    let items = ul.querySelectorAll(".item.item-spc.flw-item");
-                    for (let el of items) latest.push(parseItem(el));
-                }
-            }
+            let comics = parseDoc(doc);
             // 7. 清理并返回
             doc.dispose();
-            let comics = {}
-            comics["hot"] = []
-            comics["latest"] = latest
-
+            
             return {
-                comics: latest,
-                maxPage: 10
-            }
+                comics: comics,
+                maxPage: 30
+            };
         },
 
         /**
