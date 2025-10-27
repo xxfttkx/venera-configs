@@ -131,7 +131,7 @@ class Jmanga extends ComicSource {
     // categories
     category = {
         /// title of the category page, used to identify the page, it should be unique
-        title: "",
+        title: "jmanga",
         parts: [{
             // title of the part
             name: "Label",
@@ -538,28 +538,6 @@ class Jmanga extends ComicSource {
             doc.dispose();
 
             return comicDetails;
-        },
-        /**
-         * [Optional] load thumbnails of a comic
-         *
-         * To render a part of an image as thumbnail, return `${url}@x=${start}-${end}&y=${start}-${end}`
-         * - If width is not provided, use full width
-         * - If height is not provided, use full height
-         * @param id {string}
-         * @param next {string?} - next page token, null for first page
-         * @returns {Promise<{thumbnails: string[], next: string?}>} - `next` is next page token, null for no more
-         */
-        loadThumbnails: async(id, next) => {
-            /*
-            ```
-            let data = JSON.parse((await Network.get('...')).body)
-
-            return {
-                thumbnails: data.list,
-                next: next,
-            }
-            ```
-            */
         },
 
         /**
