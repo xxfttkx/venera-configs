@@ -37,6 +37,25 @@ class Jmanga extends ComicSource {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
 
+    static labels = ["ファンタジー", "異世界・転生",
+        "ラブコメ", "ラブストーリー","バトル・アクション",
+        "アクション","学園",
+        "冒険","異世界",
+        "Ecchi", "コメディ", "エロい","お色気"]
+    
+    static categories = Jmanga.labels.map(label => ({
+        label,
+        /**
+         * @type {PageJumpTarget}
+         */
+        target: {
+            page: "category",
+            attributes: {
+            category: label,
+            param: null,
+            },
+        },
+    }));
 
     // explore page list
     explore = [{
@@ -93,9 +112,9 @@ class Jmanga extends ComicSource {
             comics["latest"] = latest
             return [
                 {
-                    title: "Latest",
+                    title: "最新の更新",
                     comics: latest,
-                    viewMore: "viewMore",
+                    viewMore: "もっと",
                 }
             ];
         },
@@ -123,33 +142,7 @@ class Jmanga extends ComicSource {
             type: "fixed",
 
             // Remove this if type is dynamic
-            categories: [{
-                label: "Category1",
-                /**
-                 * @type {PageJumpTarget}
-                 */
-                target: {
-                    page: "category",
-                    attributes: {
-                        category: "category1",
-                        param: null,
-                    },
-                },
-            },
-            {
-                label: "ファンタジー",
-                /**
-                 * @type {PageJumpTarget}
-                 */
-                target: {
-                    page: "category",
-                    attributes: {
-                        category: "ファンタジー",
-                        param: null,
-                    },
-                },
-            },
-         ]
+            categories: Jmanga.categories,
 
             // number of comics to display at the same time
             // randomNumber: 5,
@@ -176,30 +169,39 @@ class Jmanga extends ComicSource {
          * @returns {Promise<{comics: Comic[], maxPage: number}>}
          */
         load: async(category, param, options, page) => {
-            /*
-            ```
-            let data = JSON.parse((await Network.get('...')).body)
-            let maxPage = data.maxPage
+            let res = await Network.get(`${Jmanga.source_url}genres/${category}/?p=${page}`);   
 
-            function parseComic(comic) {
-                // ...
-
-                return new Comic({
-                    id: id,
-                    title: title,
-                    subTitle: author,
-                    cover: cover,
-                    tags: tags,
-                    description: description
-                })
+            if (res.status !== 200) {
+                throw `Invalid status code: ${res.status}`
             }
 
+            // 2. 解析文档
+            let doc = new HtmlDocument(res.body);
+            // 3. 通用解析单元函数
+            function parseDoc(doc) {
+                let mangaListWrap = doc.querySelector(".mls-wrap");
+                let mangaList = mangaListWrap.querySelectorAll(".item.item-spc.flw-item");
+                let commics = []
+                for (let el of mangaList) {
+                    let mangaPoster = el.querySelector("a.manga-poster");
+                    let href = mangaPoster.attributes.href;
+                    let id = href.split("/read/")[1];
+                    let title = id.split("-raw")[0];
+                    let img = mangaPoster.querySelector("img")
+                    let cover = img.attributes["data-src"] || img.attributes.src;
+                    commics.push(new Comic({ id, title, cover }) );
+                }
+                return commics;
+            }
+
+            let comics = parseDoc(doc);
+            // 7. 清理并返回
+            doc.dispose();
+            
             return {
-                comics: data.list.map(parseComic),
-                maxPage: maxPage
-            }
-            ```
-            */
+                comics: comics,
+                maxPage: 30
+            };
         },
         // [Optional] provide options for category comic loading
         optionList: [{
