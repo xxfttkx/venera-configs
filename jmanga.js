@@ -153,6 +153,53 @@ class Jmanga extends ComicSource {
             //          // ...
             //     ]
             // }
+        },
+        {
+            // title of the part
+            name: "Others",
+
+            // fixed or random or dynamic
+            // if random, need to provide `randomNumber` field, which indicates the number of comics to display at the same time
+            // if dynamic, need to provide `loader` field, which indicates the function to load comics
+            type: "fixed",
+
+            // Remove this if type is dynamic
+            categories: [{
+                label:"最も見られました",
+                /**
+                 * @type {PageJumpTarget}
+                 */
+                target: {
+                    page: "category",
+                    attributes: {
+                    category: "最も見られました",
+                    param: "most-viewed",
+                    },
+                },
+            },
+            {
+                label:"最新の更新",
+                /**
+                 * @type {PageJumpTarget}
+                 */
+                target: {
+                    page: "category",
+                    attributes: {
+                    category: "最新の更新",
+                    param: "latest-updated",
+                    },
+                },
+            }],
+
+            // number of comics to display at the same time
+            // randomNumber: 5,
+
+            // load function for dynamic type
+            // loader: async () => {
+            //     return [
+            //          // ...
+            //     ]
+            // }
         }],
         // enable ranking page
         enableRankingPage: false,
@@ -169,7 +216,14 @@ class Jmanga extends ComicSource {
          * @returns {Promise<{comics: Comic[], maxPage: number}>}
          */
         load: async(category, param, options, page) => {
-            let res = await Network.get(`${Jmanga.source_url}genres/${category}/?p=${page}`);   
+            let url = `${Jmanga.source_url}genres/${category}/?p=${page}`
+            if (param === "most-viewed") {
+                url = `${Jmanga.source_url}most-viewed/?p=${page}`
+            }
+            if (param === "latest-updated") {
+                url = `${Jmanga.source_url}latest-updated/?p=${page}`
+            }
+            let res = await Network.get(url);   
 
             if (res.status !== 200) {
                 throw `Invalid status code: ${res.status}`
