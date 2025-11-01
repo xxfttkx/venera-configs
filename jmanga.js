@@ -23,14 +23,14 @@ class Jmanga extends ComicSource {
     // unique id of the source
     key = "jmanga"
 
-    version = "1.0.0"
+    version = "1.0.1"
 
     minAppVersion = "1.4.0"
 
     // update url
     url = ""
 
-    static source_url = "https://jmanga.tel/"
+    static source_url = "https://jmanga.ltd/"
 
     static headers = {
         "Referer": Jmanga.source_url,
