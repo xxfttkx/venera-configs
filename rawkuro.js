@@ -338,7 +338,7 @@ class Rawkuro extends ComicSource {
          * @returns {Promise<{comics: Comic[], maxPage: number}>}
          */
         load: async(keyword, options, page) => {
-            let url = `${Rawkuro.source_url}search?keyword=${keyword}`
+            let url = `${Rawkuro.source_url}search/${page}/?keyword=${keyword}`
             let res = await Network.get(url);   
 
             if (res.status !== 200) {
@@ -355,8 +355,8 @@ class Rawkuro extends ComicSource {
                 for (let el of mangaList) {
                     let mangaPoster = el.querySelector("a.block.pt-140p");
                     let href = mangaPoster.attributes.href;
-                    let id = mangaPoster.attributes.title;
-                    let title = mangaPoster.attributes.title;
+                    let id = href;
+                    let title = mangaPoster.attributes.title||"";
                     let img = mangaPoster.querySelector("img")
                     let cover = img.attributes["data-src"] || img.attributes.src;
                     cover = `${Rawkuro.source_url}` + cover
