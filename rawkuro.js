@@ -235,9 +235,9 @@ class Rawkuro extends ComicSource {
                 let commics = []
                 for (let el of mangaList) {
                     let mangaPoster = el.querySelector("a.block.pt-140p");
-                    let href = mangaPoster.attributes.href;
+                    let href = mangaPoster.attributes.href || '';
                     let id = href;
-                    let title = mangaPoster.attributes.title;
+                    let title = mangaPoster.attributes.title || '';
                     let img = mangaPoster.querySelector("img")
                     let cover = img.attributes["data-src"] || img.attributes.src;
                     cover = `${Rawkuro.source_url}` + cover
