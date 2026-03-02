@@ -596,7 +596,7 @@ class Rawkuro extends ComicSource {
                 }
                 let series = ul.querySelectorAll("li.chapter");
                 console.log("Find Chapters: " + series.length);
-                for(let e of Array.from(series).reverse()) {
+                for(let e of Array.from(series)) {
                     let li = e;
                     let item = li.querySelector("a");
                     let href = item.attributes.href;
@@ -672,7 +672,17 @@ class Rawkuro extends ComicSource {
             }
             let data = JSON.parse(result.body);
             let html = data.html;
-            const imgUrls = [...html.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+            // 同时匹配data-index和href
+            const pattern = /data-index="(\d+)"[^>]*>\s*<a href="([^"]+)"[^>]*>/g;
+            const matches = [...html.matchAll(pattern)];
+
+            const imgUrls = matches
+                .map(m => ({
+                    index: parseInt(m[1]),
+                    url: m[2]
+                }))
+                .sort((a, b) => a.index - b.index)
+                .map(item => item.url);
             // 7. 清理并返回
             doc.dispose();
 
