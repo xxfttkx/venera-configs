@@ -215,7 +215,7 @@ class Rawkuro extends ComicSource {
             let url = `${Rawkuro.source_url}genres/${category}/${page}/?sort=last_update&status=0`
             
             if (param === "most-viewed") {
-                url = `${Rawkuro.source_url}https://rawkuro.net/ranking/day/${page}`
+                url = `${Rawkuro.source_url}ranking/day/${page}`
             }
             if (param === "latest-updated") {
                 url = `${Rawkuro.source_url}all-manga/${page}/?sort=last_update&status=0`
@@ -600,7 +600,7 @@ class Rawkuro extends ComicSource {
                     let li = e;
                     let item = li.querySelector("a");
                     let href = item.attributes.href;
-                    let title = li.attributes.data?.trim() || "";
+                    let title = item.text?.trim() || "";
                     chapters.set(href, title)
                 }
                 return new ComicDetails({
