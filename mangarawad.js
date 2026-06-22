@@ -248,7 +248,7 @@ class Mangarawad extends ComicSource {
                     let title = el.querySelector("h3")?.text?.trim() || "";;
 
                     let img = mangaPoster.querySelector("img")
-                    let cover = img.attributes.src;
+                    let cover = img.attributes["data-original"] || img.attributes.src;
                     commics.push(new Comic({ id, title, cover }) );
                     console.log("href: "+href)
                     console.log("cover: "+cover)
@@ -660,7 +660,8 @@ class Mangarawad extends ComicSource {
             console.log("Found " + liList.length + " images in chapter " + epId);
             let imgUrls = []
             for (let li of liList) {
-                let src = li.attributes["data-cdn"] || li.attributes.src || "";
+                let img = li.querySelector("img")
+                let src = img.attributes["data-cdn"] || img.attributes["data-original"] || img.attributes.src || "";
                 console.log("Found image src: " + src);
                 imgUrls.push(src);
             }
