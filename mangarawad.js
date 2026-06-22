@@ -600,7 +600,9 @@ class Mangarawad extends ComicSource {
                 let chapters = new Map()
 
                 let cols = doc.querySelector(".gap-2.grid.grid-cols-2");
-                let series = cols.querySelectorAll("a");
+                let series = Array.from(
+                    cols.querySelectorAll("a")
+                    ).reverse();
                 console.log("Find Chapters: " + series.length);
                 for(let item of Array.from(series)) {
                     let href = item.attributes.href;
