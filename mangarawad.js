@@ -262,7 +262,7 @@ class Mangarawad extends ComicSource {
             
             return {
                 comics: comics,
-                maxPage: 30
+                maxPage: 100
             };
         },
         // [Optional] provide options for category comic loading
@@ -382,7 +382,7 @@ class Mangarawad extends ComicSource {
             
             return {
                 comics: comics,
-                maxPage: 30
+                maxPage: 100
             };
         },
 
