@@ -364,7 +364,7 @@ class Mangarawad extends ComicSource {
                 let mangaListWrap = doc.querySelector(".gap-4.grid.grid-cols-2.md\\:grid-cols-5.sm\\:grid-cols-3");
                 let mangaList = mangaListWrap.querySelectorAll(".cursor-pointer.flex.hover\\:bg-gray-800.items-start.justify-start.manga-item_item__4ej97.p-0.relative.rounded-xl");
                 let commics = []
-                console.error("Found " + mangaList.length + " comics in category " + category + " with param " + param);
+                // console.error("Found " + mangaList.length + " comics in category " + category + " with param " + param);
                 for (let el of mangaList) {
                     let mangaPoster = el.querySelector("a.block");
                     let href = mangaPoster.attributes.href || '';
