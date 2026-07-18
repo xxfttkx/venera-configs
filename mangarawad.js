@@ -23,14 +23,14 @@ class Mangarawad extends ComicSource {
     // unique id of the source
     key = "mangarawad"
 
-    version = "1.0.0"
+    version = "1.0.1"
 
     minAppVersion = "1.4.0"
 
     // update url
     url = ""
 
-    static source_url = "https://mangarawad.win/"
+    static source_url = "https://mangarawad.cc/"
 
     static headers = {
         "Referer": Mangarawad.source_url,
@@ -349,7 +349,8 @@ class Mangarawad extends ComicSource {
          * @returns {Promise<{comics: Comic[], maxPage: number}>}
          */
         load: async(keyword, options, page) => {
-            let url = `${Mangarawad.source_url}search/${page}/?keyword=${keyword}`
+            // https://mangarawad.cc/search/manga?keyword=%E3%81%AA%E3%81%84%E3%81%97%E3%82%87
+            let url = `${Mangarawad.source_url}search/manga?keyword=${keyword}&page=${page}`
             let res = await Network.get(url);   
 
             if (res.status !== 200) {
@@ -358,20 +359,24 @@ class Mangarawad extends ComicSource {
 
             // 2. 解析文档
             let doc = new HtmlDocument(res.body);
-             // 3. 通用解析单元函数
-             function parseDoc(doc) {
-                let mangaListWrap = doc.querySelector(".grid.gtc-f141a.gg-20.p-13.mh-77vh");
-                let mangaList = mangaListWrap.querySelectorAll(".b-img.full-i.i-mage.oh.relative");
+            // 3. 通用解析单元函数
+            function parseDoc(doc) {
+                let mangaListWrap = doc.querySelector(".gap-4.grid.grid-cols-2.md\\:grid-cols-5.sm\\:grid-cols-3");
+                let mangaList = mangaListWrap.querySelectorAll(".cursor-pointer.flex.hover\\:bg-gray-800.items-start.justify-start.manga-item_item__4ej97.p-0.relative.rounded-xl");
                 let commics = []
+                console.error("Found " + mangaList.length + " comics in category " + category + " with param " + param);
                 for (let el of mangaList) {
-                    let mangaPoster = el.querySelector("a.block.pt-140p");
-                    let href = mangaPoster.attributes.href;
+                    let mangaPoster = el.querySelector("a.block");
+                    let href = mangaPoster.attributes.href || '';
                     let id = href;
-                    let title = mangaPoster.attributes.title||"";
+                    
+                    let title = el.querySelector("h3")?.text?.trim() || "";;
+
                     let img = mangaPoster.querySelector("img")
-                    let cover = img.attributes["data-src"] || img.attributes.src;
-                    cover = `${Mangarawad.source_url}` + cover
+                    let cover = img.attributes["data-original"] || img.attributes.src;
                     commics.push(new Comic({ id, title, cover }) );
+                    console.log("href: "+href)
+                    console.log("cover: "+cover)
                 }
                 return commics;
             }
